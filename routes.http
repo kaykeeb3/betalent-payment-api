@@ -1,14 +1,8 @@
-# Instruções de Uso:
-# 1. Instale a extensão "REST Client" (humao.rest-client) no VS Code.
-# 2. Execute a requisição de Login para obter o token e cole o valor na variável @token abaixo.
-# 3. Clique em "Send Request" acima de cada bloco de requisição para executá-la.
-
 @baseUrl = http://localhost:3333
 @token = YWRtaW5AZW1haWwuY29tOmFkbWluOjE3NzMxNTUxMDkzMDI=
 
 # ── AUTENTICAÇÃO ───────────────────────────────────────────────────────────
 
-# Realiza o login do administrador para obter o token de acesso
 POST {{baseUrl}}/login
 Content-Type: application/json
 
@@ -21,13 +15,13 @@ Content-Type: application/json
 
 # ── PRODUTOS ───────────────────────────────────────────────────────────────
 
-# Lista todos os produtos cadastrados - Role: admin
+# Role: admin
 GET {{baseUrl}}/products
 Authorization: Bearer {{token}}
 
 ###
 
-# Cria um novo produto no sistema - Role: admin
+# Role: admin
 POST {{baseUrl}}/products
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -39,7 +33,7 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Atualiza os dados de um produto existente - Role: admin
+# Role: admin
 PUT {{baseUrl}}/products/1
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -51,7 +45,7 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Remove um produto do catálogo - Role: admin
+# Role: admin
 DELETE {{baseUrl}}/products/2
 Authorization: Bearer {{token}}
 
@@ -59,7 +53,7 @@ Authorization: Bearer {{token}}
 
 # ── COMPRA ─────────────────────────────────────────────────────────────────
 
-# Realiza uma compra padrão (rota pública)
+# Rota pública
 POST {{baseUrl}}/purchase
 Content-Type: application/json
 
@@ -82,8 +76,7 @@ Content-Type: application/json
 
 ###
 
-# Realiza uma compra forçando o erro no Gateway 1 para testar o fallback.
-# O CVV "100" simula erro de processamento no provedor principal.
+# CVV "100" força erro no Gateway 1 para validar o fallback automático
 POST {{baseUrl}}/purchase
 Content-Type: application/json
 
@@ -108,19 +101,19 @@ Content-Type: application/json
 
 # ── TRANSAÇÕES ─────────────────────────────────────────────────────────────
 
-# Lista o histórico completo de transações - Role: admin
+# Role: admin
 GET {{baseUrl}}/transactions
 Authorization: Bearer {{token}}
 
 ###
 
-# Exibe os detalhes de uma transação específica - Role: admin
+# Role: admin
 GET {{baseUrl}}/transactions/9
 Authorization: Bearer {{token}}
 
 ###
 
-# Realiza o estorno de uma transação processada - Role: admin
+# Role: admin
 POST {{baseUrl}}/transactions/9/refund
 Authorization: Bearer {{token}}
 
@@ -128,13 +121,13 @@ Authorization: Bearer {{token}}
 
 # ── CLIENTES ───────────────────────────────────────────────────────────────
 
-# Lista todos os clientes que já realizaram compras - Role: admin
+# Role: admin
 GET {{baseUrl}}/clients
 Authorization: Bearer {{token}}
 
 ###
 
-# Exibe o perfil do cliente e seu histórico de compras - Role: admin
+# Role: admin
 GET {{baseUrl}}/clients/6
 Authorization: Bearer {{token}}
 
@@ -142,7 +135,7 @@ Authorization: Bearer {{token}}
 
 # ── GATEWAYS ───────────────────────────────────────────────────────────────
 
-# Desativa um gateway de pagamento no sistema - Role: admin
+# Role: admin
 PATCH {{baseUrl}}/gateways/1/toggle
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -153,7 +146,7 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Reativa um gateway de pagamento no sistema - Role: admin
+# Role: admin
 PATCH {{baseUrl}}/gateways/1/toggle
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -164,7 +157,7 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Altera a prioridade do gateway na fila de fallback - Role: admin
+# Role: admin
 PATCH {{baseUrl}}/gateways/1/priority
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -177,13 +170,13 @@ Authorization: Bearer {{token}}
 
 # ── USUÁRIOS ───────────────────────────────────────────────────────────────
 
-# Lista todos os usuários administrativos - Role: admin
+# Role: admin
 GET {{baseUrl}}/users
 Authorization: Bearer {{token}}
 
 ###
 
-# Cria um novo usuário administrativo - Role: admin
+# Role: admin
 POST {{baseUrl}}/users
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -196,7 +189,7 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Atualiza dados de um usuário administrativo - Role: admin
+# Role: admin
 PUT {{baseUrl}}/users/2
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -208,6 +201,6 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Remove um usuário administrativo - Role: admin
+# Role: admin
 DELETE {{baseUrl}}/users/3
 Authorization: Bearer {{token}}
