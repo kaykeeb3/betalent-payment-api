@@ -1,6 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Product from 'App/Models/Product'
-import { productValidator } from 'App/Validators/ProductValidator'
+import ProductValidator from 'App/Validators/ProductValidator'
+import UpdateProductValidator from 'App/Validators/UpdateProductValidator'
 
 export default class ProductsController {
   public async index({ response }: HttpContextContract) {
@@ -18,7 +19,7 @@ export default class ProductsController {
         message: 'Acesso negado: apenas administradores podem criar produtos',
       })
     }
-    const payload = await productValidator.validate(request.all())
+    const payload = await request.validate(ProductValidator)
     const product = await Product.create(payload)
     return response.created({
       success: true,
@@ -42,7 +43,7 @@ export default class ProductsController {
       })
     }
     const product = await Product.findOrFail(params.id)
-    const payload = await productValidator.validate(request.all())
+    const payload = await request.validate(UpdateProductValidator)
     product.merge(payload)
     await product.save()
     return response.ok({

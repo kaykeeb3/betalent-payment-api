@@ -4,7 +4,7 @@ import Transaction from './Transaction'
 import Product from './Product'
 
 export default class TransactionProduct extends BaseModel {
-  public static table = 'transaction_products'
+  public static tableName = 'transaction_products'
 
   @column({ isPrimary: true })
   public id: number

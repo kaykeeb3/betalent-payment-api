@@ -9,7 +9,8 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       - DB_HOST=mysql
       - DB_USER=betalent
@@ -28,6 +29,11 @@ services:
       MYSQL_USER: betalent
       MYSQL_PASSWORD: betalent
       MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       - "3307:3306"
     volumes:

@@ -4,14 +4,14 @@ import Hash from '@ioc:Adonis/Core/Hash'
 
 export default class UserSeeder extends BaseSeeder {
   public async run() {
-    await User.firstOrCreate(
+    await User.updateOrCreate(
       { email: 'admin@email.com' },
       {
-        password: await Hash.make('123456'),
+        password: await Hash.make('Admin@2024!'),
         role: 'admin',
       }
     )
 
-    console.log('Usuário administrador configurado com sucesso');
+    console.log('Usuário administrador configurado com sucesso')
   }
 }

@@ -14,8 +14,14 @@ export default class TransactionRepository {
     return transaction
   }
 
-  public async updateStatus(id: number, status: string, gatewayData?: { gatewayId?: number, externalId?: string | null }) {
-    const transaction = await Transaction.findOrFail(id)
+  public async updateStatus(
+    id: number,
+    status: string,
+    gatewayData?: { gatewayId?: number; externalId?: string | null },
+    trx?: any
+  ) {
+    const query = trx ? Transaction.query().useTransaction(trx) : Transaction.query()
+    const transaction = await query.where('id', id).firstOrFail()
     transaction.status = status
 
     if (gatewayData) {
@@ -27,8 +33,9 @@ export default class TransactionRepository {
     return transaction
   }
 
-  public async findById(id: number) {
-    return await Transaction.query()
+  public async findById(id: number, trx?: any) {
+    const query = trx ? Transaction.query().useTransaction(trx) : Transaction.query()
+    return await query
       .where('id', id)
       .preload('client')
       .preload('gateway')
@@ -36,8 +43,9 @@ export default class TransactionRepository {
       .first()
   }
 
-  public async findByIdOrFail(id: number) {
-    return await Transaction.query()
+  public async findByIdOrFail(id: number, trx?: any) {
+    const query = trx ? Transaction.query().useTransaction(trx) : Transaction.query()
+    return await query
       .where('id', id)
       .preload('client')
       .preload('gateway')

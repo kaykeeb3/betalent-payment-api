@@ -58,7 +58,6 @@
     "@adonisjs/core": "^5.9.0",
     "@adonisjs/lucid": "^18.4.2",
     "@adonisjs/repl": "^3.1.11",
-    "@vinejs/vine": "^4.3.0",
     "axios": "^1.13.6",
     "luxon": "^3.7.2",
     "mysql2": "^3.19.1",

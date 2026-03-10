@@ -6,9 +6,9 @@ API RESTful para gerenciamento de pagamentos multi-gateway com fallback automát
 
 ## Requisitos
 
-- Docker (v20.10+)
-- Docker Compose (v2.0+)
-- Node.js (v18+)
+- Docker v20.10+
+- Docker Compose v2.0+
+- Node.js v18+
 - npm
 
 ---
@@ -16,110 +16,174 @@ API RESTful para gerenciamento de pagamentos multi-gateway com fallback automát
 ## Variáveis de Ambiente
 
 Crie o arquivo .env a partir do exemplo:
-  cp .env.example .env
+cp .env.example .env
 
-| Variável | Descrição | Exemplo |
-| :--- | :--- | :--- |
-| **Aplicação** | | |
-| PORT | Porta da API | 3333 |
-| APP_KEY | Chave da aplicação | cJCfwVWJC-oa5w0YtzIwPHlBh23pov-l |
-| **Banco de Dados** | | |
-| DB_CONNECTION | Driver de conexão | mysql |
-| MYSQL_HOST | Host do MySQL | mysql |
-| MYSQL_PORT | Porta do MySQL | 3306 |
-| MYSQL_USER | Usuário do banco | betalent |
-| MYSQL_PASSWORD | Senha do banco | betalent |
-| MYSQL_DB_NAME | Nome do banco | betalent |
-| **Gateway 1** | | |
-| GATEWAY_1_URL | URL do mock G1 | http://gateways:3001 |
-| GATEWAY_1_EMAIL | Email de auth G1 | dev@betalent.tech |
-| GATEWAY_1_TOKEN | Token de auth G1 | FEC9BB078BF338F464F96B48089EB498 |
-| **Gateway 2** | | |
-| GATEWAY_2_URL | URL do mock G2 | http://gateways:3002 |
-| GATEWAY_2_TOKEN | Token fixo G2 | tk_f2198cc671b5289fa856 |
-| GATEWAY_2_SECRET | Secret fixo G2 | 3d15e8ed6131446ea7e3456728b1211f |
+| Variável         | Descrição                            | Obrigatória |
+| :--------------- | :----------------------------------- | :---------- |
+| PORT             | Porta em que a API será executada    | Sim         |
+| APP_KEY          | Chave secreta da aplicação           | Sim         |
+| DB_CONNECTION    | Driver de conexão do banco de dados  | Sim         |
+| MYSQL_HOST       | Host do banco de dados               | Sim         |
+| MYSQL_PORT       | Porta do banco de dados              | Sim         |
+| MYSQL_USER       | Usuário do banco de dados            | Sim         |
+| MYSQL_PASSWORD   | Senha do banco de dados              | Sim         |
+| MYSQL_DB_NAME    | Nome do banco de dados               | Sim         |
+| GATEWAY_1_URL    | URL do primeiro gateway de pagamento | Sim         |
+| GATEWAY_1_EMAIL  | Email de autenticação do Gateway 1   | Sim         |
+| GATEWAY_1_TOKEN  | Token de autenticação do Gateway 1   | Sim         |
+| GATEWAY_2_URL    | URL do segundo gateway de pagamento  | Sim         |
+| GATEWAY_2_TOKEN  | Token de autenticação do Gateway 2   | Sim         |
+| GATEWAY_2_SECRET | Secret de autenticação do Gateway 2  | Sim         |
+
+O arquivo .env contém dados sensíveis e nunca deve ser versionado.
 
 ---
 
-## Instalação e Execução
-
-### Com Docker (recomendado)
+## Instalação Com Docker
 
 1. Clonar o repositório
-2. Copiar o .env: `cp .env.example .env`
-3. Subir os containers: `docker-compose up -d --build`
-4. Rodar as migrations: `docker exec betalent_api node ace migration:run`
-5. Rodar as seeds: `docker exec betalent_api node ace db:seed`
-6. URL de acesso da API: http://localhost:3333
 
-### Sem Docker (ambiente local)
+git clone https://github.com/kaykeeb3/betalent-payment-api.git
+cd betalent-payment-api
 
-1. Clonar o repositório
-2. Instalar dependências: `npm install`
-3. Copiar o .env: `cp .env.example .env` (ajuste MYSQL_HOST para localhost)
-4. Subir apenas banco e mocks: `docker-compose up -d mysql gateways`
-5. Rodar as migrations: `node ace migration:run`
-6. Rodar as seeds: `node ace db:seed`
-7. Iniciar a API: `npm run dev`
+2. Copiar o arquivo de ambiente
+
+cp .env.example .env
+
+3. Gerar a chave da aplicação
+
+node ace generate:key
+
+Cole o valor gerado na variável APP_KEY do arquivo .env
+
+4. Subir os containers
+
+docker-compose up -d --build
+
+5. Aguardar a inicialização do banco de dados
+
+O healthcheck é automático. Aguarde cerca de 15 segundos antes
+do próximo passo. Para acompanhar:
+
+docker-compose logs -f mysql
+
+Quando aparecer "ready for connections", prossiga.
+
+6. Rodar as migrations
+
+docker exec betalent_api node ace migration:run
+
+7. Rodar as seeds
+
+docker exec betalent_api node ace db:seed
+
+8. Verificar que tudo está rodando
+
+docker-compose ps
+
+Todos os serviços devem estar com status "Up" ou "healthy".
+
+9. Acessar a API
+
+http://localhost:3333
 
 ---
 
-## Seeds — Dados Iniciais
+## Seeds
 
-| Seed | O que cria |
-| :--- | :--- |
-| MainSeeder | Executa todas as seeds na ordem correta |
-| GatewaySeeder | Gateway 1 (prioridade 1) e Gateway 2 (prioridade 2), ambos ativos |
-| UserSeeder | Usuário admin padrão para primeiro acesso |
+| Seed          | Descrição                                                |
+| ------------- | -------------------------------------------------------- |
+| MainSeeder    | Orquestra a execução das seeds na ordem correta          |
+| GatewaySeeder | Cria Gateway 1 (prioridade 1) e Gateway 2 (prioridade 2) |
+| UserSeeder    | Cria o usuário administrador padrão                      |
 
-AVISO: as seeds são obrigatórias. Sem elas nenhum gateway estará ativo e todas as tentativas de compra falharão.
+AVISO: sem a execução das seeds, os gateways não estarão
+registrados e todas as tentativas de compra falharão.
 
-Credenciais do admin criado pela seed:
+Credenciais do administrador criado pela seed:
+
 - Email: admin@email.com
-- Senha: 123456
+- Senha: Admin@2024!
+
+Recomendado alterar a senha após o primeiro acesso.
 
 ---
 
-## Rotas da API
+## Testando as Rotas
 
-### Autenticação
-As rotas privadas exigem o uso do token JWT no header Authorization. O token deve ser enviado no formato Bearer {token}.
+Ferramentas recomendadas: Insomnia, Postman ou curl.
 
-### Rotas Públicas
+Ordem recomendada para validar o fluxo completo:
+
+Passo 1 — Autenticar e obter token
+POST http://localhost:3333/login
+
+Passo 2 — Criar um produto para teste
+POST http://localhost:3333/products
+(usar token do passo 1)
+
+Passo 3 — Realizar uma compra
+POST http://localhost:3333/purchase
+(rota pública, não precisa de token)
+Atenção: não enviar o campo amount no body.
+O valor será calculado automaticamente pelo backend.
+
+Passo 4 — Confirmar a transação registrada
+GET http://localhost:3333/transactions
+
+Passo 5 — Confirmar que o cliente foi criado
+GET http://localhost:3333/clients
+
+Passo 6 — Realizar o reembolso
+POST http://localhost:3333/transactions/:id/refund
+(substituir :id pelo id retornado no passo 3)
+
+---
+
+## Rotas
 
 #### POST /login
-Descrição: Autentica um usuário e retorna o token de acesso.
-Autenticação: Não requerida
+
+Autenticação: não requerida
 
 Body:
+
 ```json
 {
   "email": "admin@email.com",
-  "password": "123456"
+  "password": "Admin@2024!"
 }
 ```
 
 Resposta:
+
 ```json
 {
   "success": true,
   "data": {
-    "token": "string",
-    "user": { "id": 1, "email": "admin@email.com", "role": "admin" }
+    "token": "eyJhbGciOiJIUzI1NiJ9.YWRtaW5AZW1haWwuY29tOmFkbWluOjE3MTAwMDAwMDAwMDA.base64signature",
+    "user": {
+      "id": 1,
+      "email": "admin@email.com",
+      "role": "admin"
+    }
   }
 }
 ```
 
+---
+
 #### POST /purchase
-Descrição: Realiza uma compra calculando o valor no backend sem receber campo amount.
-Autenticação: Não requerida
+
+Autenticação: não requerida
 
 Body:
+
 ```json
 {
   "client": {
-    "name": "Tester",
-    "email": "tester@email.com"
+    "name": "João Silva",
+    "email": "joao@email.com"
   },
   "products": [
     {
@@ -128,130 +192,422 @@ Body:
     }
   ],
   "card": {
-    "number": "5569000000006063",
-    "cvv": "010"
+    "number": "1234123412341234",
+    "cvv": "123"
   }
 }
 ```
 
 Resposta:
+
 ```json
 {
   "success": true,
   "data": {
     "id": 1,
+    "client_id": 1,
+    "gateway_id": 1,
+    "external_id": "ext_987654321",
     "status": "paid",
-    "amount": 2000,
-    "gateway_id": 1
+    "amount": 20000,
+    "card_last_numbers": "1234"
   }
 }
 ```
 
-### Rotas Privadas
+---
 
-Header obrigatório em todas:
-Authorization: Bearer {token}
+#### PATCH /gateways/:id/toggle
 
-#### Gateways
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
 
-- PATCH /gateways/:id/toggle
-Descrição: Ativa ou desativa um gateway de pagamento.
-Autenticação: Admin
-Body: `{"isActive": boolean}`
-Resposta: Sucesso com dados do gateway.
+Body:
 
-- PATCH /gateways/:id/priority
-Descrição: Altera a prioridade de fallback do gateway.
-Autenticação: Admin
-Body: `{"priority": number}`
-Resposta: Sucesso com dados do gateway.
+```json
+{
+  "isActive": false
+}
+```
 
-#### Usuários
+Resposta:
 
-- GET /users
-Descrição: Lista todos os usuários cadastrados.
-Autenticação: Admin
-Resposta: Lista de usuários.
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Gateway 1",
+    "isActive": false,
+    "priority": 1
+  }
+}
+```
 
-- POST /users
-Descrição: Cria um novo usuário administrativamente.
-Autenticação: Admin
-Body: `{"email": "...", "password": "...", "role": "..."}`
-Resposta: Usuário criado.
+---
 
-- PUT /users/:id
-Descrição: Atualiza dados de um usuário existente.
-Autenticação: Admin
-Body: `{"email": "...", "role": "..."}`
-Resposta: Usuário atualizado.
+#### PATCH /gateways/:id/priority
 
-- DELETE /users/:id
-Descrição: Remove um usuário do sistema.
-Autenticação: Admin
-Resposta: Mensagem de exclusão.
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
 
-#### Produtos
+Body:
 
-- GET /products
-Descrição: Lista todos os produtos disponíveis.
-Autenticação: Admin
-Resposta: Lista de produtos.
+```json
+{
+  "priority": 2
+}
+```
 
-- POST /products
-Descrição: Cadastra um novo produto.
-Autenticação: Admin
-Body: `{"name": "...", "amount": 1000}`
-Resposta: Produto criado.
+Resposta:
 
-- PUT /products/:id
-Descrição: Atualiza dados de um produto.
-Autenticação: Admin
-Body: `{"name": "...", "amount": 1200}`
-Resposta: Produto atualizado.
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Gateway 1",
+    "isActive": true,
+    "priority": 2
+  }
+}
+```
 
-- DELETE /products/:id
-Descrição: Remove um produto do catálogo.
-Autenticação: Admin
-Resposta: Mensagem de exclusão.
+---
 
-#### Clientes
+#### GET /users
 
-- GET /clients
-Descrição: Lista todos os clientes que já realizaram compras.
-Autenticação: Admin
-Resposta: Lista de clientes.
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
 
-- GET /clients/:id
-Descrição: Exibe detalhes do cliente e histórico de compras.
-Autenticação: Admin
-Resposta: Dados do cliente e transações relacionadas.
+Resposta:
 
-#### Transações
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "email": "admin@email.com",
+      "role": "admin"
+    }
+  ]
+}
+```
 
-- GET /transactions
-Descrição: Lista o histórico completo de transações da API.
-Autenticação: Admin
-Resposta: Lista de transações ordenadas por data.
+---
 
-- GET /transactions/:id
-Descrição: Exibe detalhes completos de uma transação.
-Autenticação: Admin
-Resposta: Dados da transação com cliente, produtos e gateway.
+#### POST /users
 
-- POST /transactions/:id/refund
-Descrição: Realiza o estorno de uma transação processada.
-Autenticação: Admin
-Resposta: Transação com status atualizado para refunded.
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Body:
+
+```json
+{
+  "email": "novo@email.com",
+  "password": "SenhaForte@2024",
+  "role": "admin"
+}
+```
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "email": "novo@email.com",
+    "role": "admin"
+  }
+}
+```
+
+---
+
+#### PUT /users/:id
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Body:
+
+```json
+{
+  "email": "editado@email.com",
+  "role": "admin"
+}
+```
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "email": "editado@email.com",
+    "role": "admin"
+  }
+}
+```
+
+---
+
+#### DELETE /users/:id
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "message": "Usuário excluído com sucesso"
+}
+```
+
+---
+
+#### GET /products
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Produto Exemplo",
+      "amount": 10000
+    }
+  ]
+}
+```
+
+---
+
+#### POST /products
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Body:
+
+```json
+{
+  "name": "Novo Produto",
+  "amount": 5000
+}
+```
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "name": "Novo Produto",
+    "amount": 5000
+  }
+}
+```
+
+---
+
+#### PUT /products/:id
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Body:
+
+```json
+{
+  "name": "Produto Atualizado",
+  "amount": 12000
+}
+```
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "name": "Produto Atualizado",
+    "amount": 12000
+  }
+}
+```
+
+---
+
+#### DELETE /products/:id
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "message": "Produto excluído com sucesso"
+}
+```
+
+---
+
+#### GET /clients
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "João Silva",
+      "email": "joao@email.com"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /clients/:id
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "transactions": [
+      {
+        "id": 1,
+        "amount": 20000,
+        "status": "paid",
+        "created_at": "2024-03-10T14:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### GET /transactions
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "client_id": 1,
+      "amount": 20000,
+      "status": "paid"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /transactions/:id
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "amount": 20000,
+    "status": "paid",
+    "client": {
+      "name": "João Silva",
+      "email": "joao@email.com"
+    },
+    "products": [
+      {
+        "id": 1,
+        "name": "Produto Exemplo",
+        "quantity": 2,
+        "amount": 10000
+      }
+    ],
+    "gateway": {
+      "name": "Gateway 1"
+    }
+  }
+}
+```
+
+---
+
+#### POST /transactions/:id/refund
+
+Autenticação: JWT obrigatório | Role: admin
+Header: Authorization: Bearer {token}
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "status": "refunded"
+  }
+}
+```
 
 ---
 
 ## Testes
 
-Comando para rodar os testes:
-  node ace test
+```bash
+node ace test
+```
 
-O que é testado:
-- Fluxo de login
-- Fluxo de compra com Gateway 1
-- Fallback para Gateway 2 quando Gateway 1 falha
-- Reembolso
+Exemplo de saída esperada:
+
+```
+[ PASSED ] AuthTest — login com credenciais válidas
+[ PASSED ] AuthTest — rejeita credenciais inválidas
+[ PASSED ] PaymentTest — compra processada pelo Gateway 1
+[ PASSED ] PaymentTest — fallback para Gateway 2 quando Gateway 1 falha
+[ PASSED ] PaymentTest — rejeita body com campo amount
+[ PASSED ] RefundTest — reembolso processado com sucesso
+```

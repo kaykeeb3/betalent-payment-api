@@ -8,9 +8,6 @@ export default class ExceptionHandler extends HttpExceptionHandler {
   }
 
   public async handle(error: any, ctx: HttpContextContract) {
-    /**
-     * Self handle or pass to custom handler
-     */
     if (error.code === 'E_VALIDATION_FAILURE' || error.name === 'ValidationError') {
       return ctx.response.badRequest({
         success: false,
@@ -26,9 +23,17 @@ export default class ExceptionHandler extends HttpExceptionHandler {
       })
     }
 
+    // ER_DUP_ENTRY é o código MySQL para constraint única violada
+    if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+      return ctx.response.conflict({
+        success: false,
+        message: 'Já existe um registro com estes dados',
+      })
+    }
+
     return ctx.response.status(error.status || 500).send({
       success: false,
-      message: error.message || 'Erro interno do servidor',
+      message: 'Ocorreu um erro interno. Tente novamente mais tarde.',
     })
   }
 }

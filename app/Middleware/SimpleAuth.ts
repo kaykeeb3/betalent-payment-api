@@ -21,23 +21,27 @@ export default class SimpleAuthMiddleware {
       })
     }
 
+    let authenticatedUser: { email: string; role: string }
+
     try {
-      const decoded = Buffer.from(token, 'base64').toString('ascii')
+      const decoded = Buffer.from(token, 'base64').toString('utf8')
       const [email, role] = decoded.split(':')
 
       if (!email || !role) {
         throw new Error('Token malformatado')
       }
 
-      // Usando authenticatedUser para evitar conflito com variáveis locais 'user'
-      ctx['authenticatedUser'] = { email, role }
-
-      await next()
+      authenticatedUser = { email, role }
     } catch (error) {
+      console.error('Erro de Autenticação:', error.message)
       return response.unauthorized({
         success: false,
-        message: 'Token de autenticação inválido ou expirado',
+        message: 'Token de autenticação inválido ou malformatado',
       })
     }
+
+    // Adiciona o usuário ao contexto e prossegue para o próximo middleware/controller
+    ctx['authenticatedUser'] = authenticatedUser
+    await next()
   }
 }

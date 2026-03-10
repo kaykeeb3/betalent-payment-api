@@ -1,0 +1,213 @@
+# Instruções de Uso:
+# 1. Instale a extensão "REST Client" (humao.rest-client) no VS Code.
+# 2. Execute a requisição de Login para obter o token e cole o valor na variável @token abaixo.
+# 3. Clique em "Send Request" acima de cada bloco de requisição para executá-la.
+
+@baseUrl = http://localhost:3333
+@token = YWRtaW5AZW1haWwuY29tOmFkbWluOjE3NzMxNTUxMDkzMDI=
+
+# ── AUTENTICAÇÃO ───────────────────────────────────────────────────────────
+
+# Realiza o login do administrador para obter o token de acesso
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "admin@email.com",
+  "password": "Admin@2024!"
+}
+
+###
+
+# ── PRODUTOS ───────────────────────────────────────────────────────────────
+
+# Lista todos os produtos cadastrados - Role: admin
+GET {{baseUrl}}/products
+Authorization: Bearer {{token}}
+
+###
+
+# Cria um novo produto no sistema - Role: admin
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Produto Teste",
+  "amount": 1000
+}
+
+###
+
+# Atualiza os dados de um produto existente - Role: admin
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Produto Atualizado",
+  "amount": 1500
+}
+
+###
+
+# Remove um produto do catálogo - Role: admin
+DELETE {{baseUrl}}/products/2
+Authorization: Bearer {{token}}
+
+###
+
+# ── COMPRA ─────────────────────────────────────────────────────────────────
+
+# Realiza uma compra padrão (rota pública)
+POST {{baseUrl}}/purchase
+Content-Type: application/json
+
+{
+  "client": {
+    "name": "João Silva",
+    "email": "joao@email.com"
+  },
+  "products": [
+    {
+      "product_id": 1,
+      "quantity": 2
+    }
+  ],
+  "card": {
+    "number": "5569000000006063",
+    "cvv": "010"
+  }
+}
+
+###
+
+# Realiza uma compra forçando o erro no Gateway 1 para testar o fallback.
+# O CVV "100" simula erro de processamento no provedor principal.
+POST {{baseUrl}}/purchase
+Content-Type: application/json
+
+{
+  "client": {
+    "name": "Maria Lima",
+    "email": "maria@email.com"
+  },
+  "products": [
+    {
+      "product_id": 1,
+      "quantity": 1
+    }
+  ],
+  "card": {
+    "number": "5569000000006063",
+    "cvv": "100"
+  }
+}
+
+###
+
+# ── TRANSAÇÕES ─────────────────────────────────────────────────────────────
+
+# Lista o histórico completo de transações - Role: admin
+GET {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+
+###
+
+# Exibe os detalhes de uma transação específica - Role: admin
+GET {{baseUrl}}/transactions/9
+Authorization: Bearer {{token}}
+
+###
+
+# Realiza o estorno de uma transação processada - Role: admin
+POST {{baseUrl}}/transactions/9/refund
+Authorization: Bearer {{token}}
+
+###
+
+# ── CLIENTES ───────────────────────────────────────────────────────────────
+
+# Lista todos os clientes que já realizaram compras - Role: admin
+GET {{baseUrl}}/clients
+Authorization: Bearer {{token}}
+
+###
+
+# Exibe o perfil do cliente e seu histórico de compras - Role: admin
+GET {{baseUrl}}/clients/6
+Authorization: Bearer {{token}}
+
+###
+
+# ── GATEWAYS ───────────────────────────────────────────────────────────────
+
+# Desativa um gateway de pagamento no sistema - Role: admin
+PATCH {{baseUrl}}/gateways/1/toggle
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "isActive": false
+}
+
+###
+
+# Reativa um gateway de pagamento no sistema - Role: admin
+PATCH {{baseUrl}}/gateways/1/toggle
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "isActive": true
+}
+
+###
+
+# Altera a prioridade do gateway na fila de fallback - Role: admin
+PATCH {{baseUrl}}/gateways/1/priority
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "priority": 2
+}
+
+###
+
+# ── USUÁRIOS ───────────────────────────────────────────────────────────────
+
+# Lista todos os usuários administrativos - Role: admin
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+
+###
+
+# Cria um novo usuário administrativo - Role: admin
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "novo@email.com",
+  "password": "Senha@2024!",
+  "role": "admin"
+}
+
+###
+
+# Atualiza dados de um usuário administrativo - Role: admin
+PUT {{baseUrl}}/users/2
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "atualizado@email.com",
+  "role": "admin"
+}
+
+###
+
+# Remove um usuário administrativo - Role: admin
+DELETE {{baseUrl}}/users/3
+Authorization: Bearer {{token}}
