@@ -1,16 +1,32 @@
-
 import Gateway from 'App/Models/Gateway'
 
 export default class GatewayController {
-  public async toggle({ params, request, response, authenticatedUser }: any) {
+  public async activate({ params, response, authenticatedUser }: any) {
     if (authenticatedUser?.role !== 'admin') {
       return response.forbidden({
         success: false,
-        message: 'Acesso negado: apenas administradores podem alterar o status de gateways',
+        message: 'Acesso negado: apenas administradores podem ativar gateways',
       })
     }
     const gateway = await Gateway.findOrFail(params.id)
-    gateway.isActive = request.input('isActive', true)
+    gateway.isActive = true
+    await gateway.save()
+
+    return response.ok({
+      success: true,
+      data: gateway,
+    })
+  }
+
+  public async deactivate({ params, response, authenticatedUser }: any) {
+    if (authenticatedUser?.role !== 'admin') {
+      return response.forbidden({
+        success: false,
+        message: 'Acesso negado: apenas administradores podem desativar gateways',
+      })
+    }
+    const gateway = await Gateway.findOrFail(params.id)
+    gateway.isActive = false
     await gateway.save()
 
     return response.ok({

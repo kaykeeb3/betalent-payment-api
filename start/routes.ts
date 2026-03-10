@@ -27,7 +27,8 @@ Route.post('/purchase', 'PurchaseController.store')
 // Privadas (Need Auth)
 Route.group(() => {
   // Gateways
-  Route.patch('/gateways/:id/toggle', 'GatewayController.toggle')
+  Route.patch('/gateways/:id/activate', 'GatewayController.activate')
+  Route.patch('/gateways/:id/deactivate', 'GatewayController.deactivate')
   Route.patch('/gateways/:id/priority', 'GatewayController.priority')
 
   // Users

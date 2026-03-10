@@ -136,24 +136,14 @@ Authorization: Bearer {{token}}
 # ── GATEWAYS ───────────────────────────────────────────────────────────────
 
 # Role: admin
-PATCH {{baseUrl}}/gateways/1/toggle
-Content-Type: application/json
+PATCH {{baseUrl}}/gateways/1/deactivate
 Authorization: Bearer {{token}}
-
-{
-  "isActive": false
-}
 
 ###
 
 # Role: admin
-PATCH {{baseUrl}}/gateways/1/toggle
-Content-Type: application/json
+PATCH {{baseUrl}}/gateways/1/activate
 Authorization: Bearer {{token}}
-
-{
-  "isActive": true
-}
 
 ###
 
