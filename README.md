@@ -1,613 +1,145 @@
-# BeTalent Multi-Gateway Payment API
+# BeTalent: Multi-Gateway Payment API 🚀
 
-API RESTful para gerenciamento de pagamentos multi-gateway com fallback automático e cálculo de valores no back-end.
+[![AdonisJS](https://img.shields.io/badge/AdonisJS-5.0-blueviolet?style=for-the-badge&logo=adonisjs)](https://preview.adonisjs.com/releases/v5/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-6fb33f?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ed?style=for-the-badge&logo=docker)](https://www.docker.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479a1?style=for-the-badge&logo=mysql)](https://www.mysql.com/)
 
----
-
-## Requisitos
-
-- Docker v20.10+
-- Docker Compose v2.0+
-- Node.js v18+
-- npm
+API de alto desempenho para orquestração de pagamentos, projetada para gerenciar múltiplos gateways com **fallback automático** e **cálculo dinâmico de valores**. Este projeto foi desenvolvido seguindo as melhores práticas de arquitetura, garantindo segurança e escalabilidade.
 
 ---
 
-## Variáveis de Ambiente
+## 🏗️ Arquitetura e Diferenciais
 
-Crie o arquivo .env a partir do exemplo:
-cp .env.example .env
+O coração deste projeto é o `PaymentService`, que implementa um mecanismo de **resiliência de transações**:
 
-| Variável         | Descrição                            | Obrigatória |
-| :--------------- | :----------------------------------- | :---------- |
-| PORT             | Porta em que a API será executada    | Sim         |
-| APP_KEY          | Chave secreta da aplicação           | Sim         |
-| DB_CONNECTION    | Driver de conexão do banco de dados  | Sim         |
-| MYSQL_HOST       | Host do banco de dados               | Sim         |
-| MYSQL_PORT       | Porta do banco de dados              | Sim         |
-| MYSQL_USER       | Usuário do banco de dados            | Sim         |
-| MYSQL_PASSWORD   | Senha do banco de dados              | Sim         |
-| MYSQL_DB_NAME    | Nome do banco de dados               | Sim         |
-| GATEWAY_1_URL    | URL do primeiro gateway de pagamento | Sim         |
-| GATEWAY_1_EMAIL  | Email de autenticação do Gateway 1   | Sim         |
-| GATEWAY_1_TOKEN  | Token de autenticação do Gateway 1   | Sim         |
-| GATEWAY_2_URL    | URL do segundo gateway de pagamento  | Sim         |
-| GATEWAY_2_TOKEN  | Token de autenticação do Gateway 2   | Sim         |
-| GATEWAY_2_SECRET | Secret de autenticação do Gateway 2  | Sim         |
-
-O arquivo .env contém dados sensíveis e nunca deve ser versionado.
+- **Cálculo de Valor no Backend**: Evita fraudes garantindo que o valor final seja calculado com base nos produtos reais cadastrados.
+- **Fallback Automático**: Se o gateway prioritário falhar (instabilidade ou erro de rede), a API tenta automaticamente o próximo da lista de prioridades.
+- **Auditoria Completa**: Cada transação armazena o histórico do gateway utilizado, IDs externos e logs de status.
+- **Segurança (PCI-Safe)**: Não armazenamos dados sensíveis como CVV ou número completo do cartão. Apenas os 4 últimos dígitos são salvos para identificação.
 
 ---
 
-## Instalação Com Docker
+## 🛠️ Requisitos do Sistema
 
-1. Clonar o repositório
-
-git clone https://github.com/kaykeeb3/betalent-payment-api.git
-cd betalent-payment-api
-
-2. Copiar o arquivo de ambiente
-
-cp .env.example .env
-
-3. Gerar a chave da aplicação
-
-node ace generate:key
-
-Cole o valor gerado na variável APP_KEY do arquivo .env
-
-4. Subir os containers
-
-docker-compose up -d --build
-
-5. Aguardar a inicialização do banco de dados
-
-O healthcheck é automático. Aguarde cerca de 15 segundos antes
-do próximo passo. Para acompanhar:
-
-docker-compose logs -f mysql
-
-Quando aparecer "ready for connections", prossiga.
-
-6. Rodar as migrations
-
-docker exec betalent_api node ace migration:run
-
-7. Rodar as seeds
-
-docker exec betalent_api node ace db:seed
-
-8. Verificar que tudo está rodando
-
-docker-compose ps
-
-Todos os serviços devem estar com status "Up" ou "healthy".
-
-9. Acessar a API
-
-http://localhost:3333
+- **Docker** v20.10+ e **Docker Compose** v2.0+
+- **Node.js** v18+ (opcional, recomendado o uso via Docker)
+- **Extensão REST Client** (opcional, para testes rápidos no VS Code)
 
 ---
 
-## Seeds
+## 🚀 Instalação Rápida (Docker)
 
-| Seed          | Descrição                                                |
-| ------------- | -------------------------------------------------------- |
-| MainSeeder    | Orquestra a execução das seeds na ordem correta          |
-| GatewaySeeder | Cria Gateway 1 (prioridade 1) e Gateway 2 (prioridade 2) |
-| UserSeeder    | Cria o usuário administrador padrão                      |
+Siga os passos abaixo para configurar o ambiente de desenvolvimento:
 
-AVISO: sem a execução das seeds, os gateways não estarão
-registrados e todas as tentativas de compra falharão.
+1. **Clone o Repositório**
 
-Credenciais do administrador criado pela seed:
+   ```bash
+   git clone https://github.com/kaykeeb3/betalent-payment-api.git
+   cd betalent-payment-api
+   ```
 
-- Email: admin@email.com
-- Senha: Admin@2024!
+2. **Configure o Ambiente**
 
-Recomendado alterar a senha após o primeiro acesso.
+   ```bash
+   cp .env.example .env
+   # Gere a chave da aplicação (será exibida no terminal)
+   node ace generate:key
+   # Copie o valor gerado e cole na variável APP_KEY do seu arquivo .env
+   ```
 
----
+3. **Suba os Containers**
 
-## Testando as Rotas
+   ```bash
+   docker-compose up -d --build
+   ```
 
-Ferramentas recomendadas: Insomnia, Postman ou curl.
+4. **Prepare o Banco de Dados**
+   Aguarde cerca de 15 segundos para o MySQL inicializar completamente e então execute:
 
-Ordem recomendada para validar o fluxo completo:
+   ```bash
+   # Executar as migrações (criação das tabelas)
+   docker exec betalent_api node ace migration:run
 
-Passo 1 — Autenticar e obter token
-POST http://localhost:3333/login
-
-Passo 2 — Criar um produto para teste
-POST http://localhost:3333/products
-(usar token do passo 1)
-
-Passo 3 — Realizar uma compra
-POST http://localhost:3333/purchase
-(rota pública, não precisa de token)
-Atenção: não enviar o campo amount no body.
-O valor será calculado automaticamente pelo backend.
-
-Passo 4 — Confirmar a transação registrada
-GET http://localhost:3333/transactions
-
-Passo 5 — Confirmar que o cliente foi criado
-GET http://localhost:3333/clients
-
-Passo 6 — Realizar o reembolso
-POST http://localhost:3333/transactions/:id/refund
-(substituir :id pelo id retornado no passo 3)
+   # Popular dados iniciais (Gateways, Produtos e Usuário Admin)
+   docker exec betalent_api node ace db:seed
+   ```
 
 ---
 
-## Rotas
+## 🔐 Autenticação
 
-#### POST /login
+A API utiliza um sistema de autenticação segura para rotas administrativas.
 
-Autenticação: não requerida
+- **Login Administrador (Seed):**
+  - **Email:** `admin@email.com`
+  - **Senha:** `Admin@2024!`
 
-Body:
-
-```json
-{
-  "email": "admin@email.com",
-  "password": "Admin@2024!"
-}
-```
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiJ9.YWRtaW5AZW1haWwuY29tOmFkbWluOjE3MTAwMDAwMDAwMDA.base64signature",
-    "user": {
-      "id": 1,
-      "email": "admin@email.com",
-      "role": "admin"
-    }
-  }
-}
-```
+Após o login, utilize o token retornado no cabeçalho:
+`Authorization: Bearer token`
 
 ---
 
-#### POST /purchase
+## 📡 Endpoints Principais
 
-Autenticação: não requerida
+Abaixo estão listadas as principais rotas da aplicação. Para uma documentação interativa e completa, você pode utilizar o arquivo **`routes.http`** disponível na raiz do projeto.
 
-Body:
+### 💳 Pagamentos (Público)
 
-```json
-{
-  "client": {
-    "name": "João Silva",
-    "email": "joao@email.com"
-  },
-  "products": [
-    {
-      "product_id": 1,
-      "quantity": 2
-    }
-  ],
-  "card": {
-    "number": "1234123412341234",
-    "cvv": "123"
-  }
-}
-```
+- `POST /purchase`: Realiza uma compra. O corpo deve conter informações do cliente, lista de produtos e dados do cartão (sem amount).
 
-Resposta:
+### 🛍️ Produtos (Admin)
 
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "client_id": 1,
-    "gateway_id": 1,
-    "external_id": "ext_987654321",
-    "status": "paid",
-    "amount": 20000,
-    "card_last_numbers": "1234"
-  }
-}
-```
+- `GET /products`: Listagem completa.
+- `POST /products`: Criação de novo produto.
+- `PUT /products/:id`: Atualização parcial ou total.
+
+### 🧾 Transações (Admin)
+
+- `GET /transactions`: Histórico geral de vendas.
+- `GET /transactions/:id`: Detalhes específicos com relacionamento de produtos.
+- `POST /transactions/:id/refund`: Inicia o estorno de uma transação junto ao gateway original.
+
+### 👥 Clientes (Admin)
+
+- `GET /clients`: Lista de clientes que já compraram.
+- `GET /clients/:id`: Perfil detalhado com histórico de transações e produtos vinculados.
 
 ---
 
-#### PATCH /gateways/:id/toggle
+## ⚙️ Configuração de Gateways
 
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
+Você pode gerenciar o comportamento do fallback em tempo real:
 
-Body:
-
-```json
-{
-  "isActive": false
-}
-```
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "name": "Gateway 1",
-    "isActive": false,
-    "priority": 1
-  }
-}
-```
+- **Prioridade:** Defina a ordem de tentativa (`PATCH /gateways/:id/priority`).
+- **Ativação:** Ative ou desative gateways instantaneamente (`PATCH /gateways/:id/toggle`).
 
 ---
 
-#### PATCH /gateways/:id/priority
+## 🧪 Testes Automatizados
 
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
+O projeto conta com uma suíte de testes funcionais que validam desde a autenticação até o fluxo completo de fallback entre gateways.
 
-Body:
-
-```json
-{
-  "priority": 2
-}
-```
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "name": "Gateway 1",
-    "isActive": true,
-    "priority": 2
-  }
-}
-```
-
----
-
-#### GET /users
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "email": "admin@email.com",
-      "role": "admin"
-    }
-  ]
-}
-```
-
----
-
-#### POST /users
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Body:
-
-```json
-{
-  "email": "novo@email.com",
-  "password": "SenhaForte@2024",
-  "role": "admin"
-}
-```
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 2,
-    "email": "novo@email.com",
-    "role": "admin"
-  }
-}
-```
-
----
-
-#### PUT /users/:id
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Body:
-
-```json
-{
-  "email": "editado@email.com",
-  "role": "admin"
-}
-```
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 2,
-    "email": "editado@email.com",
-    "role": "admin"
-  }
-}
-```
-
----
-
-#### DELETE /users/:id
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "message": "Usuário excluído com sucesso"
-}
-```
-
----
-
-#### GET /products
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Produto Exemplo",
-      "amount": 10000
-    }
-  ]
-}
-```
-
----
-
-#### POST /products
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Body:
-
-```json
-{
-  "name": "Novo Produto",
-  "amount": 5000
-}
-```
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 2,
-    "name": "Novo Produto",
-    "amount": 5000
-  }
-}
-```
-
----
-
-#### PUT /products/:id
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Body:
-
-```json
-{
-  "name": "Produto Atualizado",
-  "amount": 12000
-}
-```
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 2,
-    "name": "Produto Atualizado",
-    "amount": 12000
-  }
-}
-```
-
----
-
-#### DELETE /products/:id
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "message": "Produto excluído com sucesso"
-}
-```
-
----
-
-#### GET /clients
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "João Silva",
-      "email": "joao@email.com"
-    }
-  ]
-}
-```
-
----
-
-#### GET /clients/:id
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "name": "João Silva",
-    "email": "joao@email.com",
-    "transactions": [
-      {
-        "id": 1,
-        "amount": 20000,
-        "status": "paid",
-        "created_at": "2024-03-10T14:00:00.000Z"
-      }
-    ]
-  }
-}
-```
-
----
-
-#### GET /transactions
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "client_id": 1,
-      "amount": 20000,
-      "status": "paid"
-    }
-  ]
-}
-```
-
----
-
-#### GET /transactions/:id
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "amount": 20000,
-    "status": "paid",
-    "client": {
-      "name": "João Silva",
-      "email": "joao@email.com"
-    },
-    "products": [
-      {
-        "id": 1,
-        "name": "Produto Exemplo",
-        "quantity": 2,
-        "amount": 10000
-      }
-    ],
-    "gateway": {
-      "name": "Gateway 1"
-    }
-  }
-}
-```
-
----
-
-#### POST /transactions/:id/refund
-
-Autenticação: JWT obrigatório | Role: admin
-Header: Authorization: Bearer {token}
-
-Resposta:
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 1,
-    "status": "refunded"
-  }
-}
-```
-
----
-
-## Testes
+**Para rodar os testes:**
 
 ```bash
-node ace test
+docker exec betalent_api node ace test functional
 ```
 
-Exemplo de saída esperada:
+---
 
-```
-[ PASSED ] AuthTest — login com credenciais válidas
-[ PASSED ] AuthTest — rejeita credenciais inválidas
-[ PASSED ] PaymentTest — compra processada pelo Gateway 1
-[ PASSED ] PaymentTest — fallback para Gateway 2 quando Gateway 1 falha
-[ PASSED ] PaymentTest — rejeita body com campo amount
-[ PASSED ] RefundTest — reembolso processado com sucesso
-```
+## 👨‍💻 Ferramentas de Desenvolvedor
+
+Para facilitar os testes sem depender de ferramentas externas como Postman, este repositório inclui um arquivo **`routes.http`**.
+
+**Como usar:**
+
+1. Instale a extensão **REST Client** no VS Code.
+2. Abra o arquivo `routes.http`.
+3. Clique em **"Send Request"** nos blocos de código para executar as chamadas diretamente no editor.
+
+---
+
+## 🛡️ Licença
+
+Este projeto é destinado a fins de avaliação técnica (**Nível 2 BeTalent**). Todos os direitos reservados.
